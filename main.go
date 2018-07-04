@@ -47,10 +47,27 @@ func commandHandler(discord *discordgo.Session, message *discordgo.MessageCreate
 		return
 	}
 
+	channel, _ := discord.State.Channel(message.ChannelID)
+	gid := channel.GuildID
+	roles, _ := discord.GuildRoles(gid)
+	adminRID := ""
+	for _, v := range roles {
+		if v.Name == "admin" {
+			adminRID = v.ID
+		}
+	}
+	member, _ := discord.GuildMember(gid, message.Author.ID)
+	admin := false
+	for _, r := range member.Roles {
+		if r == adminRID {
+			admin = true
+		}
+	}
 	content := message.Content
 
-	if content == "!test" {
+	if content == "!test" && admin == true {
 		discord.ChannelMessageSend(message.ChannelID, "Testing..")
+		log.Printf("Command: %+v Message: %+v || From: %s\n", content, message.Message, message.Author)
 	}
 
 	if content == "!corgime" {
@@ -67,54 +84,18 @@ func commandHandler(discord *discordgo.Session, message *discordgo.MessageCreate
 		err = json.Unmarshal(body, &corgiPic)
 		errCheck("unmarshal of json failed", err)
 
-		// resp, err = http.Get(corgiPic.Message)
-		// errCheck("failed to download the pic", err)
-
-		// defer resp.Body.Close()
-
-		//pic := io.Reader(resp.Body)
-
-		// pic, err := os.Create("/tmp/corgi.jpg")
-		// errCheck("failed to save temp pic", err)
-
-		// _, err = io.Copy(file, resp.Body)
-		// errCheck("write failed", err)
-
-		// file.Close
-
 		embed := &discordgo.MessageEmbed{
 			Author: &discordgo.MessageEmbedAuthor{},
-			Color:  0x00ff00, // Green
-			//Description: "This is a discordgo embed",
-			// Fields: []*discordgo.MessageEmbedField{
-			// 	&discordgo.MessageEmbedField{
-			// 		Name:   "I am a field",
-			// 		Value:  "I am a value",
-			// 		Inline: true,
-			// 	},
-			// 	&discordgo.MessageEmbedField{
-			// 		Name:   "I am a second field",
-			// 		Value:  "I am a value",
-			// 		Inline: true,
-			// 	},
-			// },
+			Color:  0x9542f4, // Green
 			Image: &discordgo.MessageEmbedImage{
 				URL: corgiPic.Message,
-				// },
-				// Thumbnail: &discordgo.MessageEmbedThumbnail{
-				// 	URL: corgiPic.Message,
 			},
 			Timestamp: time.Now().Format(time.RFC3339), // Discord wants ISO8601; RFC3339 is an extension of ISO8601 and should be completely compatible.
-			//Title:     "I am an Embed",
 		}
-
 		discord.ChannelMessageSendEmbed(message.ChannelID, embed)
-
-		//discord.ChannelFileSend(message.ChannelID, "Corgi", pic)
-
+		log.Printf("Command: %+v Message: %+v || From: %s\n", content, message.Message, message.Author)
 	}
 
-	log.Printf("Message: %+v || From: %s\n", message.Message, message.Author)
 }
 
 func main() {
@@ -139,6 +120,8 @@ func main() {
 
 	err = discord.Open()
 	errCheck("Error opening connection to Discord", err)
+
+	//chans, err := discord.GuildChannels(discord.)
 	defer discord.Close()
 
 	commandPrefix = "!"
@@ -146,3 +129,29 @@ func main() {
 	<-make(chan struct{})
 
 }
+
+// embed := &discordgo.MessageEmbed{
+// 	Author: &discordgo.MessageEmbedAuthor{},
+// 	Color:  0x9542f4, // Green
+// 	Description: "This is a discordgo embed",
+// 	Fields: []*discordgo.MessageEmbedField{
+// 		&discordgo.MessageEmbedField{
+// 			Name:   "I am a field",
+// 			Value:  "I am a value",
+// 			Inline: true,
+// 		},
+// 		&discordgo.MessageEmbedField{
+// 			Name:   "I am a second field",
+// 			Value:  "I am a value",
+// 			Inline: true,
+// 		},
+// 	},
+// 	Image: &discordgo.MessageEmbedImage{
+// 		URL: corgiPic.Message,
+// 		},
+// 		Thumbnail: &discordgo.MessageEmbedThumbnail{
+// 			URL: corgiPic.Message,
+// 	},
+// 	Timestamp: time.Now().Format(time.RFC3339), // Discord wants ISO8601; RFC3339 is an extension of ISO8601 and should be completely compatible.
+// 	Title:     "I am an Embed",
+// }
