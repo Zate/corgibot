@@ -1,2 +1,1 @@
-## CorgiBot for Discord
-
+# CorgiBot for Discord
