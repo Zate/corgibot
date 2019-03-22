@@ -1,10 +1,11 @@
 package main
 
 import (
-	"encoding/json"
 	"io/ioutil"
 	"log"
+	"math/rand"
 	"net/http"
+	"regexp"
 	"time"
 
 	"github.com/bwmarrin/discordgo"
@@ -72,29 +73,64 @@ func commandHandler(discord *discordgo.Session, message *discordgo.MessageCreate
 
 	if content == "!corgime" {
 		// https://dog.ceo/api/breed/corgi/images/random
-		resp, err := http.Get("https://dog.ceo/api/breed/corgi/images/random")
-		if err != nil {
-			discord.ChannelMessageSend(message.ChannelID, "Failed to get corgi pic")
-			return
-		}
-		body, err := ioutil.ReadAll(resp.Body)
-		defer resp.Body.Close()
-		errCheck("failed to parse response", err)
-		corgiPic := corgiAPIresp{}
-		err = json.Unmarshal(body, &corgiPic)
-		errCheck("unmarshal of json failed", err)
+		// resp, err := http.Get("https://dog.ceo/api/breed/corgi/images/random")
+		// if err != nil {
+		// 	discord.ChannelMessageSend(message.ChannelID, "Failed to get corgi pic")
+		// 	return
+		// }
+		// body, err := ioutil.ReadAll(resp.Body)
+		// defer resp.Body.Close()
+		// errCheck("failed to parse response", err)
+		// corgiPic := corgiAPIresp{}
+		// err = json.Unmarshal(body, &corgiPic)
+		// errCheck("unmarshal of json failed", err)
+
+		corgi := randomCorgi()
 
 		embed := &discordgo.MessageEmbed{
 			Author: &discordgo.MessageEmbedAuthor{},
 			Color:  0x9542f4, // Green
 			Image: &discordgo.MessageEmbedImage{
-				URL: corgiPic.Message,
+				//URL: corgiPic.Message,
+				URL: corgi,
 			},
 			Timestamp: time.Now().Format(time.RFC3339), // Discord wants ISO8601; RFC3339 is an extension of ISO8601 and should be completely compatible.
 		}
 		discord.ChannelMessageSendEmbed(message.ChannelID, embed)
 		log.Printf("Command: %+v Message: %+v || From: %s\n", content, message.Message, message.Author)
 	}
+
+}
+
+func randomCorgi() string {
+	url := "https://www.google.com/search?q=corgi&tbm=isch"
+
+	resp, err := http.Get(url)
+
+	errCheck("randomCorgi", err)
+
+	defer resp.Body.Close()
+
+	body, _ := ioutil.ReadAll(resp.Body)
+	// ou":"http://spectrum-sitecore-spectrumbrands.netdna-ssl.com/~/media/Pet/Furminator/Images/Solution%20Center%20Images/Feature%20Images/corgi.jpg"
+	re := regexp.MustCompile("ou\":\"(http[^\"]+)\"")
+	//re := regexp.MustCompile("src=\"(http[^\"]+)\"")
+	matches := re.FindAllStringSubmatch(string(body), -1)
+	log.Println(string(body))
+	corgis := make([]string, len(matches))
+	log.Println(len(matches))
+	for index, match := range matches {
+		log.Println(match[0])
+		corgis[index] = match[0]
+	}
+
+	//seed with nanoseconds to get make sure unique random number returned
+	rand.Seed(time.Now().UnixNano())
+
+	corgi := corgis[rand.Intn(len(corgis))]
+	//get random image url and print to stdout
+	log.Println(corgi)
+	return corgi
 
 }
 
