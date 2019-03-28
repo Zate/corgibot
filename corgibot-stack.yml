@@ -9,6 +9,10 @@ services:
       driver: json-file
     secrets:
      - botkey
+    deploy:
+      placement:
+        constraints:
+          - node.role == manager
 networks:
   default:
     driver: overlay
