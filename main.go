@@ -5,6 +5,7 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/bwmarrin/discordgo"
@@ -48,27 +49,53 @@ func commandHandler(discord *discordgo.Session, message *discordgo.MessageCreate
 		return
 	}
 
-	channel, _ := discord.State.Channel(message.ChannelID)
-	gid := channel.GuildID
-	roles, _ := discord.GuildRoles(gid)
-	adminRID := ""
-	for _, v := range roles {
-		if v.Name == "admin" {
-			adminRID = v.ID
-		}
-	}
-	member, _ := discord.GuildMember(gid, message.Author.ID)
 	admin := false
-	for _, r := range member.Roles {
-		if r == adminRID {
-			admin = true
+
+	if discord.State.User.Bot == false {
+		channel, err := discord.State.Channel(message.ChannelID)
+		errCheck("Get Channel ID", err)
+		gid := channel.GuildID
+		roles, err := discord.GuildRoles(gid)
+		errCheck("Get Guild Roles", err)
+		adminRID := ""
+		for _, v := range roles {
+			if v.Name == "admin" {
+				adminRID = v.ID
+			}
+		}
+
+		member, err := discord.GuildMember(gid, message.Author.ID)
+		errCheck("Get member from Guild", err)
+
+		for _, r := range member.Roles {
+			if r == adminRID {
+				admin = true
+			}
 		}
 	}
+
 	content := message.Content
 
 	if content == "!test" && admin == true {
 		discord.ChannelMessageSend(message.ChannelID, "Testing..")
 		log.Printf("Command: %+v Message: %+v || From: %s\n", content, message.Message, message.Author)
+	}
+
+	if content == "!rules" {
+		dmChannelID, err := discord.UserChannelCreate(message.Author.ID)
+		if err != nil {
+			discord.ChannelMessageSend(message.ChannelID, string(err.Error()))
+			return
+
+		}
+
+		rules, err := discord.ChannelMessageSend(dmChannelID.ID, "sup")
+		errCheck("Error writing rules", err)
+		err = discord.MessageReactionAdd(rules.ChannelID, rules.ID, "")
+		errCheck("Could not add reaction", err)
+
+		log.Printf("Command: %+v Message: %+v || From: %s\n", content, message.Message, message.Author)
+		return
 	}
 
 	if content == "!corgime" {
@@ -95,6 +122,7 @@ func commandHandler(discord *discordgo.Session, message *discordgo.MessageCreate
 		}
 		discord.ChannelMessageSendEmbed(message.ChannelID, embed)
 		log.Printf("Command: %+v Message: %+v || From: %s\n", content, message.Message, message.Author)
+		return
 	}
 
 }
@@ -105,12 +133,11 @@ func main() {
 	//k.getAPIKeys("/run/secrets/botkey")
 	botkey, err := ioutil.ReadFile("/run/secrets/botkey")
 	errCheck("Not able to read botkey secret", err)
-	k.BotKey = string(botkey)
+	k.BotKey = strings.TrimSuffix(string(botkey), "\n")
 	discord, err := discordgo.New("Bot " + k.BotKey)
 	errCheck("error creating discord session", err)
 	user, err := discord.User("@me")
 	errCheck("error retrieving account", err)
-
 	botID = user.ID
 	discord.AddHandler(commandHandler)
 	discord.AddHandler(func(discord *discordgo.Session, ready *discordgo.Ready) {
