@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"github.com/bwmarrin/discordgo"
-	yaml "gopkg.in/yaml.v2"
+	// 	yaml "gopkg.in/yaml.v2"
 )
 
 func errCheck(msg string, err error) {
@@ -33,13 +33,14 @@ type corgiAPIresp struct {
 	Message string `json:"message"`
 }
 
-func (a *apikeys) getAPIKeys(filename string) *apikeys {
-	yamlFile, err := ioutil.ReadFile(filename)
-	errCheck("", err)
-	err = yaml.Unmarshal(yamlFile, a)
-	errCheck("", err)
-	return a
-}
+// func (a *apikeys) getAPIKeys(filename string) *apikeys {
+// 	yamlFile, err := ioutil.ReadFile(filename)
+// 	errCheck("", err)
+// 	a := new(a)
+// 	err = yaml.Unmarshal(yamlFile, a)
+// 	errCheck("", err)
+// 	return a
+// }
 
 func commandHandler(discord *discordgo.Session, message *discordgo.MessageCreate) {
 	user := message.Author
@@ -136,8 +137,11 @@ func randomCorgi() string {
 
 func main() {
 	log.SetFlags(log.LstdFlags | log.Lmicroseconds | log.Lshortfile)
-	var k apikeys
-	k.getAPIKeys(".secrets.yaml")
+	k := new(apikeys)
+	//k.getAPIKeys("/run/secrets/botkey")
+	botkey, err := ioutil.ReadFile("/run/secrets/botkey")
+	errCheck("Not able to read botkey secret", err)
+	k.BotKey = string(botkey)
 	discord, err := discordgo.New("Bot " + k.BotKey)
 	errCheck("error creating discord session", err)
 	user, err := discord.User("@me")
