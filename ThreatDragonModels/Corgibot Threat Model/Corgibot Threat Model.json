@@ -1,0 +1,18 @@
+{
+  "summary": {
+    "title": "Corgibot Threat Model",
+    "owner": "Zate",
+    "description": "It does stuff."
+  },
+  "detail": {
+    "contributors": [],
+    "diagrams": [
+      {
+        "title": "Corgibot",
+        "thumbnail": "./public/content/images/thumbnail.jpg",
+        "id": 0
+      }
+    ],
+    "reviewer": "Zate"
+  }
+}
