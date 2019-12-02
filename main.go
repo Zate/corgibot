@@ -106,13 +106,21 @@ func commandHandler(discord *discordgo.Session, message *discordgo.MessageCreate
 func randomCorgi() string {
 	url := "https://www.google.com/search?q=corgi&tbm=isch"
 
-	resp, err := http.Get(url)
+	client := &http.Client{}
 
-	errCheck("randomCorgi", err)
+	req, err := http.NewRequest("GET", url, nil)
+	errCheck("New Request", err)
+
+	req.Header.Set("User-Agent", "Mozilla/5.0 (X11; CrOS x86_64 12607.34.0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.42 Safari/537.36")
+
+	resp, err := client.Do(req)
+	errCheck("client do", err)
 
 	defer resp.Body.Close()
 
-	body, _ := ioutil.ReadAll(resp.Body)
+	body, err := ioutil.ReadAll(resp.Body)
+
+	errCheck("io read body", err)
 	// ou":"http://spectrum-sitecore-spectrumbrands.netdna-ssl.com/~/media/Pet/Furminator/Images/Solution%20Center%20Images/Feature%20Images/corgi.jpg"
 	re := regexp.MustCompile("ou\":\"(http[^\"]+)\"")
 	//re := regexp.MustCompile("src=\"(http[^\"]+)\"")
