@@ -3,7 +3,6 @@ WORKDIR /go/src/github.com/zate/corgibot/
 ADD main.go .
 RUN GO111MODULE=on go mod init github.com/Zate/corgibot
 RUN GO111MODULE=on go mod tidy
-RUN GO111MODULE=on go mod vendor
 RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o corgibot main.go
 
 FROM scratch

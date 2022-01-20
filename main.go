@@ -22,6 +22,7 @@ func errCheck(msg string, err error) {
 var (
 	commandPrefix string
 	botID         string
+	adminBit      int = 8
 )
 
 type apikeys struct {
@@ -49,20 +50,32 @@ func commandHandler(discord *discordgo.Session, message *discordgo.MessageCreate
 		return
 	}
 
-	channel, _ := discord.State.Channel(message.ChannelID)
+	channel, err := discord.State.Channel(message.ChannelID)
+	errCheck("Error getting info on "+message.ChannelID, err)
 	gid := channel.GuildID
-	roles, _ := discord.GuildRoles(gid)
-	adminRID := ""
-	for _, v := range roles {
-		if v.Name == "admin" {
-			adminRID = v.ID
-		}
-	}
-	member, _ := discord.GuildMember(gid, message.Author.ID)
+
+	// errCheck("Error getting roles for "+gid, err)
+	// adminRID := ""
+	// for _, v := range roles {
+	// 	// need to check for 0x00000008 against user flags.
+
+	// 	if v.Permissions&adminBit == 1 {
+	// 		adminRID = v.ID
+	// 	}
+	// }
+	member, err := discord.GuildMember(gid, message.Author.ID)
+	errCheck("Error getting roles for "+message.Author.Username, err)
 	admin := false
-	for _, r := range member.Roles {
-		if r == adminRID {
-			admin = true
+	roles, err := discord.GuildRoles(gid)
+	errCheck("Error getting roles for "+gid, err)
+	for _, v := range roles {
+		for _, r := range member.Roles {
+			if v.Name == r {
+				if v.Permissions&adminBit == 1 {
+					admin = true
+				}
+
+			}
 		}
 	}
 	content := message.Content
@@ -154,7 +167,6 @@ func main() {
 	errCheck("error creating discord session", err)
 	user, err := discord.User("@me")
 	errCheck("error retrieving account", err)
-
 	botID = user.ID
 	discord.AddHandler(commandHandler)
 	discord.AddHandler(func(discord *discordgo.Session, ready *discordgo.Ready) {
